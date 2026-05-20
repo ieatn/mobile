@@ -1,11 +1,11 @@
-import { ScrollView, StyleSheet } from 'react-native';
+import { Link } from 'expo-router';
+import { Pressable, ScrollView, StyleSheet, View } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 
+import { Screen } from '@/components/screen';
 import { TestingMobileCrud } from '@/components/testing-mobile-crud';
 import { ThemedText } from '@/components/themed-text';
-import { ThemedView } from '@/components/themed-view';
 import { MaxContentWidth, Spacing } from '@/constants/theme';
-import { useColorScheme } from '@/hooks/use-color-scheme';
 
 function getGreeting() {
   const hour = new Date().getHours();
@@ -14,62 +14,59 @@ function getGreeting() {
   return 'Good evening';
 }
 
-const WARM = {
-  light: '#FFF8F0',
-  dark: '#1C1510',
-} as const;
-
 export default function HomeScreen() {
-  const scheme = useColorScheme();
-  const isDark = scheme === 'dark';
-
   return (
-    <ThemedView style={[styles.container, { backgroundColor: isDark ? WARM.dark : WARM.light }]}>
+    <Screen>
       <SafeAreaView style={styles.safeArea}>
         <ScrollView
-          contentContainerStyle={styles.scrollContent}
+          contentContainerStyle={styles.scroll}
           keyboardShouldPersistTaps="handled"
           showsVerticalScrollIndicator={false}>
-          <ThemedText type="title" style={styles.greeting}>
+          <View style={styles.navRow}>
+            <View />
+            <Link href="/auth" asChild>
+              <Pressable hitSlop={8}>
+                <ThemedText type="linkPrimary">Account</ThemedText>
+              </Pressable>
+            </Link>
+          </View>
+
+          <ThemedText type="largeTitle" style={styles.greeting}>
             {getGreeting()}
           </ThemedText>
-          <ThemedText type="default" themeColor="textSecondary" style={styles.message}>
+          <ThemedText type="default" themeColor="textSecondary" style={styles.subtitle}>
             Glad you&apos;re here.
           </ThemedText>
+
           <TestingMobileCrud />
         </ScrollView>
       </SafeAreaView>
-    </ThemedView>
+    </Screen>
   );
 }
 
 const styles = StyleSheet.create({
-  container: {
-    flex: 1,
-  },
   safeArea: {
     flex: 1,
-    paddingHorizontal: Spacing.four,
     maxWidth: MaxContentWidth,
     width: '100%',
     alignSelf: 'center',
   },
-  scrollContent: {
-    flexGrow: 1,
-    justifyContent: 'center',
+  scroll: {
+    paddingHorizontal: Spacing.three,
+    paddingBottom: Spacing.six,
+  },
+  navRow: {
+    flexDirection: 'row',
+    justifyContent: 'space-between',
     alignItems: 'center',
-    paddingVertical: Spacing.four,
+    minHeight: 44,
+    marginBottom: Spacing.one,
   },
   greeting: {
-    fontSize: 36,
-    lineHeight: 42,
-    textAlign: 'center',
-    letterSpacing: -0.5,
+    marginBottom: Spacing.one,
   },
-  message: {
-    marginTop: Spacing.three,
-    textAlign: 'center',
-    fontSize: 18,
-    lineHeight: 26,
+  subtitle: {
+    marginBottom: Spacing.four,
   },
 });

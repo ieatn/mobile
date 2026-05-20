@@ -7,20 +7,26 @@ import '@/global.css';
 
 import { Platform } from 'react-native';
 
+import { Spring } from '@/constants/spring-theme';
+
 export const Colors = {
   light: {
-    text: '#000000',
-    background: '#ffffff',
-    backgroundElement: '#F0F0F3',
-    backgroundSelected: '#E0E1E6',
-    textSecondary: '#60646C',
+    text: Spring.light.text,
+    background: Spring.light.sky,
+    backgroundElement: Spring.light.card,
+    backgroundSelected: Spring.light.peachDeep,
+    textSecondary: Spring.light.textMuted,
+    accent: Spring.light.cherry,
+    accentSoft: Spring.light.blossom,
   },
   dark: {
-    text: '#ffffff',
-    background: '#000000',
-    backgroundElement: '#212225',
-    backgroundSelected: '#2E3135',
-    textSecondary: '#B0B4BA',
+    text: Spring.dark.text,
+    background: Spring.dark.sky,
+    backgroundElement: Spring.dark.card,
+    backgroundSelected: Spring.dark.peachDeep,
+    textSecondary: Spring.dark.textMuted,
+    accent: Spring.dark.cherry,
+    accentSoft: Spring.dark.blossom,
   },
 } as const;
 
@@ -28,28 +34,27 @@ export type ThemeColor = keyof typeof Colors.light & keyof typeof Colors.dark;
 
 export const Fonts = Platform.select({
   ios: {
-    /** iOS `UIFontDescriptorSystemDesignDefault` */
-    sans: 'system-ui',
-    /** iOS `UIFontDescriptorSystemDesignSerif` */
-    serif: 'ui-serif',
-    /** iOS `UIFontDescriptorSystemDesignRounded` */
-    rounded: 'ui-rounded',
-    /** iOS `UIFontDescriptorSystemDesignMonospaced` */
-    mono: 'ui-monospace',
+    sans: 'System',
+    display: 'System',
+    sansMedium: 'System',
+    sansBold: 'System',
+    mono: 'Menlo',
   },
   default: {
-    sans: 'normal',
-    serif: 'serif',
-    rounded: 'normal',
+    sans: 'System',
+    display: 'System',
+    sansMedium: 'System',
+    sansBold: 'System',
     mono: 'monospace',
   },
   web: {
-    sans: 'var(--font-display)',
-    serif: 'var(--font-serif)',
-    rounded: 'var(--font-rounded)',
-    mono: 'var(--font-mono)',
+    sans: 'system-ui, -apple-system, BlinkMacSystemFont, sans-serif',
+    display: 'system-ui, -apple-system, BlinkMacSystemFont, sans-serif',
+    sansMedium: 'system-ui, -apple-system, BlinkMacSystemFont, sans-serif',
+    sansBold: 'system-ui, -apple-system, BlinkMacSystemFont, sans-serif',
+    mono: 'ui-monospace, monospace',
   },
-});
+})!;
 
 export const Spacing = {
   half: 2,

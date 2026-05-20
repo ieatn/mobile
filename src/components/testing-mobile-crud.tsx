@@ -3,16 +3,14 @@ import {
   ActivityIndicator,
   Alert,
   Pressable,
-  ScrollView,
   StyleSheet,
   TextInput,
   View,
 } from 'react-native';
 
+import { GroupedSection } from '@/components/grouped-section';
 import { ThemedText } from '@/components/themed-text';
-import { ThemedView } from '@/components/themed-view';
-import { Spacing } from '@/constants/theme';
-import { useTheme } from '@/hooks/use-theme';
+import { useSpringPalette } from '@/hooks/use-spring-palette';
 import { supabase } from '@/lib/supabase';
 import type { TestingMobileRow } from '@/types/testing-mobile';
 
@@ -26,7 +24,7 @@ type FormState = {
 const emptyForm = (): FormState => ({ title: '', notes: '' });
 
 export function TestingMobileCrud() {
-  const theme = useTheme();
+  const palette = useSpringPalette();
   const [rows, setRows] = useState<TestingMobileRow[]>([]);
   const [loading, setLoading] = useState(true);
   const [saving, setSaving] = useState(false);
@@ -105,14 +103,13 @@ export function TestingMobileCrud() {
   };
 
   const handleDelete = (row: TestingMobileRow) => {
-    Alert.alert('Delete row?', `"${row.title}" will be removed.`, [
+    Alert.alert('Delete note?', `"${row.title}" will be removed.`, [
       { text: 'Cancel', style: 'cancel' },
       {
         text: 'Delete',
         style: 'destructive',
         onPress: async () => {
           setSaving(true);
-          setError(null);
           const { error: deleteError } = await supabase.from(TABLE).delete().eq('id', row.id);
           if (deleteError) {
             setError(deleteError.message);
@@ -126,189 +123,159 @@ export function TestingMobileCrud() {
     ]);
   };
 
-  const inputStyle = [
-    styles.input,
-    {
-      color: theme.text,
-      borderColor: theme.backgroundSelected,
-      backgroundColor: theme.backgroundElement,
-    },
-  ];
+  const fieldStyle = [styles.field, { backgroundColor: palette.fill, color: palette.text }];
 
   return (
-    <ThemedView type="backgroundElement" style={styles.panel}>
-      <ThemedText type="subtitle" style={styles.sectionTitle}>
-        testing_mobile
-      </ThemedText>
-      <ThemedText type="small" themeColor="textSecondary" style={styles.sectionHint}>
-        Supabase CRUD sandbox (anon, dev-only policies)
-      </ThemedText>
-
-      {error ? (
-        <ThemedText type="small" style={styles.error}>
-          {error}
-        </ThemedText>
-      ) : null}
-
-      <TextInput
-        style={inputStyle}
-        placeholder="Title"
-        placeholderTextColor={theme.textSecondary}
-        value={form.title}
-        onChangeText={(title) => setForm((prev) => ({ ...prev, title }))}
-        editable={!saving}
-      />
-      <TextInput
-        style={[inputStyle, styles.notesInput]}
-        placeholder="Notes (optional)"
-        placeholderTextColor={theme.textSecondary}
-        value={form.notes}
-        onChangeText={(notes) => setForm((prev) => ({ ...prev, notes }))}
-        multiline
-        editable={!saving}
-      />
-
-      <View style={styles.formActions}>
-        <Pressable
-          style={[styles.button, styles.primaryButton, saving && styles.buttonDisabled]}
-          onPress={handleSave}
-          disabled={saving}>
-          <ThemedText type="smallBold" style={styles.buttonLabel}>
-            {editingId ? 'Update' : 'Create'}
-          </ThemedText>
-        </Pressable>
-        {editingId ? (
-          <Pressable style={styles.button} onPress={resetForm} disabled={saving}>
-            <ThemedText type="smallBold">Cancel</ThemedText>
-          </Pressable>
+    <View>
+      <GroupedSection title="New note" footer="Dev sandbox table: testing_mobile">
+        {error ? (
+          <View style={[styles.cell, styles.bordered, { borderBottomColor: palette.separator }]}>
+            <ThemedText type="small" style={{ color: palette.error }}>
+              {error}
+            </ThemedText>
+          </View>
         ) : null}
-        <Pressable
-          style={styles.button}
-          onPress={loadRows}
-          disabled={loading || saving}>
-          <ThemedText type="smallBold">Refresh</ThemedText>
-        </Pressable>
-      </View>
+        <View style={[styles.cell, styles.bordered, { borderBottomColor: palette.separator }]}>
+          <TextInput
+            style={fieldStyle}
+            placeholder="Title"
+            placeholderTextColor={palette.textMuted}
+            value={form.title}
+            onChangeText={(title) => setForm((prev) => ({ ...prev, title }))}
+            editable={!saving}
+          />
+        </View>
+        <View style={[styles.cell, styles.bordered, { borderBottomColor: palette.separator }]}>
+          <TextInput
+            style={[fieldStyle, styles.notesField]}
+            placeholder="Notes"
+            placeholderTextColor={palette.textMuted}
+            value={form.notes}
+            onChangeText={(notes) => setForm((prev) => ({ ...prev, notes }))}
+            multiline
+            editable={!saving}
+          />
+        </View>
+        <View style={styles.actions}>
+          <Pressable
+            style={[styles.actionBtn, { backgroundColor: palette.cherry }, saving && styles.disabled]}
+            onPress={handleSave}
+            disabled={saving}>
+            <ThemedText type="smallBold" style={styles.actionLabel}>
+              {editingId ? 'Save changes' : 'Add note'}
+            </ThemedText>
+          </Pressable>
+          {editingId ? (
+            <Pressable style={styles.textBtn} onPress={resetForm} disabled={saving}>
+              <ThemedText type="linkPrimary">Cancel</ThemedText>
+            </Pressable>
+          ) : (
+            <Pressable style={styles.textBtn} onPress={loadRows} disabled={loading || saving}>
+              <ThemedText type="linkPrimary">Refresh</ThemedText>
+            </Pressable>
+          )}
+        </View>
+      </GroupedSection>
 
-      {loading ? (
-        <ActivityIndicator style={styles.loader} />
-      ) : rows.length === 0 ? (
-        <ThemedText type="small" themeColor="textSecondary" style={styles.empty}>
-          No rows yet. Create one above.
-        </ThemedText>
-      ) : (
-        <ScrollView style={styles.list} nestedScrollEnabled>
-          {rows.map((row) => (
-            <ThemedView key={row.id} type="background" style={styles.row}>
-              <ThemedText type="smallBold">{row.title}</ThemedText>
+      <GroupedSection title="Notes">
+        {loading ? (
+          <View style={styles.cell}>
+            <ActivityIndicator color={palette.cherry} />
+          </View>
+        ) : rows.length === 0 ? (
+          <View style={styles.cell}>
+            <ThemedText type="default" themeColor="textSecondary">
+              No notes yet.
+            </ThemedText>
+          </View>
+        ) : (
+          rows.map((row, index) => (
+            <View
+              key={row.id}
+              style={[
+                styles.cell,
+                index < rows.length - 1 && styles.bordered,
+                index < rows.length - 1 && { borderBottomColor: palette.separator },
+              ]}>
+              <ThemedText type="default" style={styles.rowTitle}>
+                {row.title}
+              </ThemedText>
               {row.notes ? (
                 <ThemedText type="small" themeColor="textSecondary" style={styles.rowNotes}>
                   {row.notes}
                 </ThemedText>
               ) : null}
-              <ThemedText type="code" themeColor="textSecondary" style={styles.rowMeta}>
+              <ThemedText type="small" themeColor="textSecondary">
                 {new Date(row.updated_at).toLocaleString()}
               </ThemedText>
               <View style={styles.rowActions}>
-                <Pressable style={styles.rowButton} onPress={() => handleEdit(row)} disabled={saving}>
+                <Pressable onPress={() => handleEdit(row)} disabled={saving}>
                   <ThemedText type="linkPrimary">Edit</ThemedText>
                 </Pressable>
-                <Pressable style={styles.rowButton} onPress={() => handleDelete(row)} disabled={saving}>
-                  <ThemedText type="link" style={styles.deleteLabel}>
+                <Pressable onPress={() => handleDelete(row)} disabled={saving}>
+                  <ThemedText type="link" style={{ color: palette.error }}>
                     Delete
                   </ThemedText>
                 </Pressable>
               </View>
-            </ThemedView>
-          ))}
-        </ScrollView>
-      )}
-    </ThemedView>
+            </View>
+          ))
+        )}
+      </GroupedSection>
+    </View>
   );
 }
 
 const styles = StyleSheet.create({
-  panel: {
-    width: '100%',
-    borderRadius: 12,
-    padding: Spacing.three,
-    marginTop: Spacing.four,
+  cell: {
+    paddingHorizontal: 16,
+    paddingVertical: 12,
   },
-  sectionTitle: {
-    fontSize: 22,
-    lineHeight: 28,
+  bordered: {
+    borderBottomWidth: StyleSheet.hairlineWidth,
   },
-  sectionHint: {
-    marginTop: Spacing.half,
-    marginBottom: Spacing.two,
+  field: {
+    fontSize: 17,
+    lineHeight: 22,
+    borderRadius: 10,
+    paddingHorizontal: 12,
+    paddingVertical: 10,
   },
-  error: {
-    color: '#c0392b',
-    marginBottom: Spacing.two,
-  },
-  input: {
-    borderWidth: 1,
-    borderRadius: 8,
-    paddingHorizontal: Spacing.two,
-    paddingVertical: Spacing.two,
-    fontSize: 16,
-    marginBottom: Spacing.two,
-  },
-  notesInput: {
+  notesField: {
     minHeight: 72,
     textAlignVertical: 'top',
   },
-  formActions: {
-    flexDirection: 'row',
-    flexWrap: 'wrap',
-    gap: Spacing.two,
-    marginBottom: Spacing.three,
+  actions: {
+    padding: 16,
+    gap: 12,
   },
-  button: {
-    paddingHorizontal: Spacing.three,
-    paddingVertical: Spacing.two,
-    borderRadius: 8,
-    backgroundColor: 'rgba(128,128,128,0.15)',
+  actionBtn: {
+    minHeight: 50,
+    borderRadius: 12,
+    alignItems: 'center',
+    justifyContent: 'center',
   },
-  primaryButton: {
-    backgroundColor: '#3c87f7',
+  actionLabel: {
+    color: '#FFFFFF',
   },
-  buttonDisabled: {
-    opacity: 0.6,
+  textBtn: {
+    alignItems: 'center',
+    minHeight: 44,
+    justifyContent: 'center',
   },
-  buttonLabel: {
-    color: '#fff',
+  disabled: {
+    opacity: 0.5,
   },
-  loader: {
-    marginVertical: Spacing.three,
-  },
-  empty: {
-    textAlign: 'center',
-    paddingVertical: Spacing.three,
-  },
-  list: {
-    maxHeight: 320,
-  },
-  row: {
-    borderRadius: 8,
-    padding: Spacing.two,
-    marginBottom: Spacing.two,
+  rowTitle: {
+    fontWeight: '600',
+    marginBottom: 4,
   },
   rowNotes: {
-    marginTop: Spacing.half,
-  },
-  rowMeta: {
-    marginTop: Spacing.one,
+    marginBottom: 4,
   },
   rowActions: {
     flexDirection: 'row',
-    gap: Spacing.three,
-    marginTop: Spacing.two,
-  },
-  rowButton: {
-    paddingVertical: Spacing.half,
-  },
-  deleteLabel: {
-    color: '#c0392b',
+    gap: 20,
+    marginTop: 10,
   },
 });

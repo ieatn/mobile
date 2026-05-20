@@ -4,24 +4,28 @@ import { Fonts, ThemeColor } from '@/constants/theme';
 import { useTheme } from '@/hooks/use-theme';
 
 export type ThemedTextProps = TextProps & {
-  type?: 'default' | 'title' | 'small' | 'smallBold' | 'subtitle' | 'link' | 'linkPrimary' | 'code';
+  type?: 'default' | 'title' | 'largeTitle' | 'small' | 'smallBold' | 'subtitle' | 'link' | 'linkPrimary' | 'code';
   themeColor?: ThemeColor;
 };
 
 export function ThemedText({ style, type = 'default', themeColor, ...rest }: ThemedTextProps) {
   const theme = useTheme();
+  const colorKey = themeColor ?? 'text';
+  const color = theme[colorKey];
+  const accentColor = 'accent' in theme ? theme.accent : color;
 
   return (
     <Text
       style={[
-        { color: theme[themeColor ?? 'text'] },
+        { color },
         type === 'default' && styles.default,
+        type === 'largeTitle' && styles.largeTitle,
         type === 'title' && styles.title,
         type === 'small' && styles.small,
         type === 'smallBold' && styles.smallBold,
         type === 'subtitle' && styles.subtitle,
         type === 'link' && styles.link,
-        type === 'linkPrimary' && styles.linkPrimary,
+        type === 'linkPrimary' && [styles.linkPrimary, { color: accentColor }],
         type === 'code' && styles.code,
         style,
       ]}
@@ -31,43 +35,59 @@ export function ThemedText({ style, type = 'default', themeColor, ...rest }: The
 }
 
 const styles = StyleSheet.create({
-  small: {
-    fontSize: 14,
-    lineHeight: 20,
-    fontWeight: 500,
-  },
-  smallBold: {
-    fontSize: 14,
-    lineHeight: 20,
-    fontWeight: 700,
-  },
-  default: {
-    fontSize: 16,
-    lineHeight: 24,
-    fontWeight: 500,
+  largeTitle: {
+    fontSize: 34,
+    lineHeight: 41,
+    fontWeight: '700',
+    fontFamily: Fonts.display,
+    letterSpacing: Platform.OS === 'ios' ? 0.37 : 0,
   },
   title: {
-    fontSize: 48,
-    fontWeight: 600,
-    lineHeight: 52,
+    fontSize: 22,
+    lineHeight: 28,
+    fontWeight: '700',
+    fontFamily: Fonts.display,
+    letterSpacing: Platform.OS === 'ios' ? 0.35 : 0,
   },
   subtitle: {
-    fontSize: 32,
-    lineHeight: 44,
-    fontWeight: 600,
+    fontSize: 20,
+    lineHeight: 25,
+    fontWeight: '600',
+    fontFamily: Fonts.display,
+  },
+  default: {
+    fontSize: 17,
+    lineHeight: 22,
+    fontWeight: '400',
+    fontFamily: Fonts.sans,
+  },
+  small: {
+    fontSize: 15,
+    lineHeight: 20,
+    fontWeight: '400',
+    fontFamily: Fonts.sans,
+  },
+  smallBold: {
+    fontSize: 15,
+    lineHeight: 20,
+    fontWeight: '600',
+    fontFamily: Fonts.sans,
   },
   link: {
-    lineHeight: 30,
-    fontSize: 14,
+    fontSize: 17,
+    lineHeight: 22,
+    fontWeight: '400',
+    fontFamily: Fonts.sans,
   },
   linkPrimary: {
-    lineHeight: 30,
-    fontSize: 14,
-    color: '#3c87f7',
+    fontSize: 17,
+    lineHeight: 22,
+    fontWeight: '400',
+    fontFamily: Fonts.sans,
   },
   code: {
     fontFamily: Fonts.mono,
-    fontWeight: Platform.select({ android: 700 }) ?? 500,
-    fontSize: 12,
+    fontSize: 13,
+    lineHeight: 18,
   },
 });
