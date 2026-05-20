@@ -1,6 +1,7 @@
-import { StyleSheet } from 'react-native';
+import { ScrollView, StyleSheet } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 
+import { TestingMobileCrud } from '@/components/testing-mobile-crud';
 import { ThemedText } from '@/components/themed-text';
 import { ThemedView } from '@/components/themed-view';
 import { MaxContentWidth, Spacing } from '@/constants/theme';
@@ -25,12 +26,18 @@ export default function HomeScreen() {
   return (
     <ThemedView style={[styles.container, { backgroundColor: isDark ? WARM.dark : WARM.light }]}>
       <SafeAreaView style={styles.safeArea}>
-        <ThemedText type="title" style={styles.greeting}>
-          {getGreeting()}
-        </ThemedText>
-        <ThemedText type="default" themeColor="textSecondary" style={styles.message}>
-          Glad you&apos;re here.
-        </ThemedText>
+        <ScrollView
+          contentContainerStyle={styles.scrollContent}
+          keyboardShouldPersistTaps="handled"
+          showsVerticalScrollIndicator={false}>
+          <ThemedText type="title" style={styles.greeting}>
+            {getGreeting()}
+          </ThemedText>
+          <ThemedText type="default" themeColor="textSecondary" style={styles.message}>
+            Glad you&apos;re here.
+          </ThemedText>
+          <TestingMobileCrud />
+        </ScrollView>
       </SafeAreaView>
     </ThemedView>
   );
@@ -42,12 +49,16 @@ const styles = StyleSheet.create({
   },
   safeArea: {
     flex: 1,
-    justifyContent: 'center',
-    alignItems: 'center',
     paddingHorizontal: Spacing.four,
     maxWidth: MaxContentWidth,
     width: '100%',
     alignSelf: 'center',
+  },
+  scrollContent: {
+    flexGrow: 1,
+    justifyContent: 'center',
+    alignItems: 'center',
+    paddingVertical: Spacing.four,
   },
   greeting: {
     fontSize: 36,
