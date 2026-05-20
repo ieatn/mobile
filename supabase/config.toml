@@ -1,0 +1,4 @@
+# Minimal config for Edge Functions. Link project: supabase link --project-ref YOUR_REF
+
+[functions.ai-notes]
+verify_jwt = true

@@ -16,7 +16,7 @@ Two routes, no tab bar. Unauthenticated users are redirected to `/auth`.
 
 | Route | File | Role |
 |-------|------|------|
-| `/` | `src/app/index.tsx` | Home — large-title greeting + notes CRUD |
+| `/` | `src/app/index.tsx` | Home — greeting, AI quote + **New quote**, notes CRUD |
 | `/auth` | `src/app/auth.tsx` | Auth — sign in, sign up, Google OAuth, sign out |
 
 | File | Role |
@@ -26,6 +26,8 @@ Two routes, no tab bar. Unauthenticated users are redirected to `/auth`.
 | `src/lib/supabase.ts` | Supabase client |
 | `src/lib/supabase-storage.ts` | Platform storage (AsyncStorage / localStorage / SSR no-op) |
 | `src/lib/auth-oauth.ts` | Google OAuth (`signInWithOAuth` + `expo-web-browser`) |
+| `src/lib/ai-notes.ts` | Invokes Edge Function `ai-notes` (historical quote line) |
+| `supabase/functions/ai-notes/` | Edge Function: `gemini-2.5-flash-lite` quote (philosophy, finance, etc.) |
 
 ## UI conventions
 
@@ -51,6 +53,72 @@ EXPO_PUBLIC_SUPABASE_ANON_KEY=
 3. Optional: disable email confirmation while testing sign-up
 
 **Dev table** `testing_mobile` — open RLS policies for anon/authenticated (sandbox only; not production-safe).
+
+### AI quotes (home subtitle + “New quote”)
+
+The app does **not** call Gemini from the phone. It calls a **custom Edge Function** named `ai-notes` (source: `supabase/functions/ai-notes/index.ts`). That function runs on Supabase, reads `GEMINI_API_KEY` from Supabase secrets, and returns one quote (`gemini-2.5-flash-lite`).
+
+#### Why you can’t put `GEMINI_API_KEY` in local `.env` for Expo
+
+Expo/React Native apps are installed on the user’s device. Anything the **app binary uses** to call Gemini can be extracted (decompile, proxy traffic, read bundled JS). So a Gemini key in the mobile app is effectively **public** — anyone could steal it and charge your Google account.
+
+| Where the key lives | Who can see it | OK for Gemini? |
+|---------------------|----------------|----------------|
+| `EXPO_PUBLIC_*` in `.env` | Bundled into the app → public | **No** |
+| `GEMINI_API_KEY` in `.env` (no `EXPO_PUBLIC_`) | Not auto-exposed to JS, but useless unless you add client code that reads it — and that code would still ship to the device | **No** (don’t wire it in the app) |
+| `supabase secrets set GEMINI_API_KEY` | Only Supabase servers (Edge Function runtime) | **Yes** |
+
+**Safe pattern:** phone → Supabase Edge Function (server) → Gemini. The phone never holds the Google key.
+
+Local `.env` is only for what the **Expo client** needs: `EXPO_PUBLIC_SUPABASE_URL` and `EXPO_PUBLIC_SUPABASE_ANON_KEY`. Those are designed to be public; auth + RLS protect your data.
+
+#### Why `supabase login` / CLI at all?
+
+`supabase login` is **not** Gemini and **not** your app users logging in. It proves **you** (the developer) to Supabase so the CLI can:
+
+- upload the function (`functions deploy`)
+- set project secrets (`secrets set`)
+
+Without login, the CLI has no access token → errors like “Access token not provided.” Your end users never run the CLI; they only sign into the app via Supabase Auth.
+
+#### Why both secret **and** deploy?
+
+| Piece | Analogy |
+|-------|---------|
+| **Deploy** | Puts the recipe (`index.ts`) on Supabase’s kitchen |
+| **Secret** | Gives the kitchen the Gemini “ingredient” (API key) |
+
+Both are required for live AI quotes. See table below.
+
+**You need both** — they do different jobs:
+
+| Step | Command / place | What it does | Without it |
+|------|-----------------|--------------|------------|
+| **1. Secret** | `supabase secrets set GEMINI_API_KEY=...` | Stores the Google API key on Supabase for the function to use | Function runs but Gemini calls fail → app shows fallbacks only |
+| **2. Deploy** | `supabase functions deploy ai-notes` | Uploads `index.ts` so `ai-notes` exists in the cloud | App invokes a missing function → fallbacks only |
+
+`GEMINI_API_KEY` in local `.env` is **not used** by the Expo app (only `EXPO_PUBLIC_*` vars are). Do not put the Gemini key in the client.
+
+**One-time setup checklist** (project ref `pahjwgiuvjmqhutwnblx`):
+
+```bash
+brew install supabase/tap/supabase   # if `supabase` not found
+supabase login
+cd /path/to/mobile
+supabase link --project-ref pahjwgiuvjmqhutwnblx
+supabase secrets set GEMINI_API_KEY=your_google_ai_studio_key
+supabase functions deploy ai-notes
+```
+
+Verify in [Supabase Dashboard](https://supabase.com/dashboard/project/pahjwgiuvjmqhutwnblx) → **Edge Functions** → `ai-notes` is listed.
+
+**When to run again:**
+
+- Changed `supabase/functions/ai-notes/index.ts` → **redeploy** (`supabase functions deploy ai-notes`)
+- Rotated Gemini key → **secrets set** again (no redeploy required unless code changed)
+- Quotes work in app but look like Seneca/Buffett only → usually missing secret **or** missing deploy
+
+**App flow:** `src/app/index.tsx` → `useAiGreeting` → `src/lib/ai-notes.ts` → `supabase.functions.invoke('ai-notes')` → quote under “Good morning”; **New quote** sends a new `seed`. Offline/errors → `src/constants/fallback-quotes.ts`.
 
 Restart Metro after `.env` changes: `npx expo start -c`.
 
@@ -80,9 +148,9 @@ Fast Refresh applies to most TSX edits; reload (`r` in terminal) if a new route 
 src/
   app/              # expo-router screens (index, auth, _layout)
   components/       # Screen, GroupedSection, auth-screen, testing-mobile-crud, themed-*
-  constants/        # theme.ts, spring-theme.ts
-  hooks/            # use-auth, use-theme, use-spring-palette, use-color-scheme
-  lib/              # supabase client, auth-oauth, supabase-storage
+  constants/        # theme.ts, spring-theme.ts, fallback-quotes.ts
+  hooks/            # use-auth, use-ai-greeting, use-theme, use-spring-palette, use-color-scheme
+  lib/              # supabase client, auth-oauth, ai-notes, supabase-storage
   providers/        # auth-provider
   types/            # testing-mobile row types
 ```

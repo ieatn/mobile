@@ -6,6 +6,8 @@ import { Screen } from '@/components/screen';
 import { TestingMobileCrud } from '@/components/testing-mobile-crud';
 import { ThemedText } from '@/components/themed-text';
 import { MaxContentWidth, Spacing } from '@/constants/theme';
+import { useAiGreeting } from '@/hooks/use-ai-greeting';
+import { useAuth } from '@/hooks/use-auth';
 
 function getGreeting() {
   const hour = new Date().getHours();
@@ -15,6 +17,9 @@ function getGreeting() {
 }
 
 export default function HomeScreen() {
+  const { session } = useAuth();
+  const { line: quote, loading, refresh } = useAiGreeting(Boolean(session));
+
   return (
     <Screen>
       <SafeAreaView style={styles.safeArea}>
@@ -34,9 +39,16 @@ export default function HomeScreen() {
           <ThemedText type="largeTitle" style={styles.greeting}>
             {getGreeting()}
           </ThemedText>
-          <ThemedText type="default" themeColor="textSecondary" style={styles.subtitle}>
-            Glad you&apos;re here.
+          <ThemedText type="default" themeColor="textSecondary" style={styles.quote}>
+            {quote}
           </ThemedText>
+          <Pressable
+            onPress={refresh}
+            disabled={loading || !session}
+            style={styles.newQuoteBtn}
+            hitSlop={8}>
+            <ThemedText type="linkPrimary">{loading ? 'Loading…' : 'New quote'}</ThemedText>
+          </Pressable>
 
           <TestingMobileCrud />
         </ScrollView>
@@ -66,7 +78,14 @@ const styles = StyleSheet.create({
   greeting: {
     marginBottom: Spacing.one,
   },
-  subtitle: {
+  quote: {
+    marginBottom: Spacing.one,
+    fontStyle: 'italic',
+  },
+  newQuoteBtn: {
+    alignSelf: 'flex-start',
+    minHeight: 44,
+    justifyContent: 'center',
     marginBottom: Spacing.four,
   },
 });
